@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     SQL_ECHO: bool = False
     UPLOAD_DIR: str = str(Path(__file__).resolve().parent.parent.parent / "uploads")
     BASE_URL: str = "http://localhost:8000"
+    PREFIX_DEPLOY_PATH:str = ""
 
     # Konfigurasi SMTP Email
     SMTP_ENABLED: bool = True

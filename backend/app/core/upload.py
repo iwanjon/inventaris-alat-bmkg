@@ -106,7 +106,10 @@ def save_upload(file: UploadFile, subdir: str, auto_compress: bool = True) -> di
     # Return paths
     relative = f"{subdir}/{filename}"
     absolute_path = str(filepath.resolve())
-    full_url = f"{settings.BASE_URL}/uploads/{relative}"
+    if settings.PREFIX_DEPLOY_PATH.strip()== "":
+        full_url = f"{settings.BASE_URL}/uploads/{relative}"
+    else:
+        full_url = f"{settings.BASE_URL}/{settings.PREFIX_DEPLOY_PATH}/uploads/{relative}"
     return {"url": relative, "absolute_path": absolute_path, "full_url": full_url}
 
 
