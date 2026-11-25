@@ -14,6 +14,7 @@ import struct
 from pathlib import Path
 
 from fpdf import FPDF
+from fpdf.enums import CellBordersLayout
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 LOGO_PATH = ASSETS_DIR / "logo_bmkg.png"
@@ -124,7 +125,6 @@ def _party_block(pdf: BASTPDF, label: str, name: str, id_no: str, position: str,
 def _signature_block(pdf: BASTPDF, left_label: str, left_name: str, left_id: str,
                      right_label: str, right_name: str, right_id: str):
     """Gambar blok tanda tangan secara utuh (tidak terpotong antar halaman)."""
-    # 6 baris * 6 mm + margin aman = 44 mm
     required_height = 44
     max_y = pdf.h - pdf.b_margin
     if pdf.get_y() + required_height > max_y:
@@ -175,18 +175,26 @@ def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number"]
         aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT")
 
-    with pdf.table(col_widths=widths, text_align=aligns, line_height=4.2) as table:
+    with pdf.table(col_widths=widths, text_align=aligns, line_height=4.5) as table:
         header_row = table.row()
         pdf.set_font("Helvetica", "B", 8.5)
         for h in headers:
             header_row.cell(h)
 
-        pdf.set_font("Helvetica", "", 8)
-        for idx, row in enumerate(rows, 1):
+        pdf.set_font("Helvetica", "", 8.5)
+        for cells, is_first, is_last in rows:
+            border = CellBordersLayout.LEFT | CellBordersLayout.RIGHT
+            if is_first:
+                border |= CellBordersLayout.TOP
+            if is_last:
+                border |= CellBordersLayout.BOTTOM
+
             data_row = table.row()
-            data_row.cell(str(idx))
-            for cell_val in row:
-                data_row.cell(str(cell_val if cell_val is not None else "-"))
+            for cell_val in cells:
+                data_row.cell(
+                    str(cell_val if cell_val is not None else "-"),
+                    border=border,
+                )
 
 
 def _render_document(pdf: BASTPDF, title: str, date_val,
@@ -292,7 +300,7 @@ def _normalize_sn_list(raw_sns: list[str]) -> list[str]:
 
 def _borrow_rows(tx) -> list:
     rows = []
-    for d in (tx.borrow_details or []):
+    for idx, d in enumerate(tx.borrow_details or [], 1):
         comp = d.inventory_component
         raw_sns = [
             bdi.inventory_item.serial_number
@@ -303,19 +311,24 @@ def _borrow_rows(tx) -> list:
             raw_sns = [comp.serial_number]
         sns = _normalize_sn_list(raw_sns)
 
-        rows.append((
-            comp.item_name if comp else "-",
-            comp.brand if comp else "-",
-            comp.model if comp else "-",
-            str(d.quantity),
-            "\n".join(sns),
-        ))
+        last_i = len(sns) - 1
+        for i, sn in enumerate(sns):
+            is_first = i == 0
+            cells = (
+                str(idx) if is_first else "",
+                (comp.item_name if comp else "-") if is_first else "",
+                (comp.brand if comp else "-") if is_first else "",
+                (comp.model if comp else "-") if is_first else "",
+                str(d.quantity) if is_first else "",
+                sn,
+            )
+            rows.append((cells, is_first, i == last_i))
     return rows
 
 
 def _return_rows(ret) -> list:
     rows = []
-    for d in (ret.return_details or []):
+    for idx, d in enumerate(ret.return_details or [], 1):
         comp = d.inventory_component
         raw_sns = []
         raw_conds = []
@@ -329,14 +342,20 @@ def _return_rows(ret) -> list:
         sns = _normalize_sn_list(raw_sns)
         conds = _normalize_sn_list(raw_conds)
 
-        rows.append((
-            comp.item_name if comp else "-",
-            comp.brand if comp else "-",
-            comp.model if comp else "-",
-            str(d.quantity),
-            "\n".join(sns),
-            "\n".join(conds),
-        ))
+        last_i = len(sns) - 1
+        for i, sn in enumerate(sns):
+            is_first = i == 0
+            cond = conds[i] if i < len(conds) else "-"
+            cells = (
+                str(idx) if is_first else "",
+                (comp.item_name if comp else "-") if is_first else "",
+                (comp.brand if comp else "-") if is_first else "",
+                (comp.model if comp else "-") if is_first else "",
+                str(d.quantity) if is_first else "",
+                sn,
+                cond,
+            )
+            rows.append((cells, is_first, i == last_i))
     return rows
 
 
@@ -360,18 +379,21 @@ def _handover_rows(h) -> list:
         key = (comp_name, brand, model)
         items_by_comp.setdefault(key, []).append(sn)
 
-    for (_comp_name, _brand, _model) in []:
-        pass
-
-    for (comp_name, brand, model), raw_sns in items_by_comp.items():
+    for idx, ((comp_name, brand, model), raw_sns) in enumerate(items_by_comp.items(), 1):
         sns = _normalize_sn_list(raw_sns)
-        rows.append((
-            comp_name,
-            brand,
-            model,
-            str(len(sns)),
-            "\n".join(sns),
-        ))
+        total_qty = str(len(sns))
+        last_i = len(sns) - 1
+        for i, sn in enumerate(sns):
+            is_first = i == 0
+            cells = (
+                str(idx) if is_first else "",
+                comp_name if is_first else "",
+                brand if is_first else "",
+                model if is_first else "",
+                total_qty if is_first else "",
+                sn,
+            )
+            rows.append((cells, is_first, i == last_i))
     return rows
 
 
