@@ -14,6 +14,7 @@ import struct
 from pathlib import Path
 
 from fpdf import FPDF
+from fpdf.enums import CellBordersLayout
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
 LOGO_PATH = ASSETS_DIR / "logo_bmkg.png"
@@ -148,8 +149,39 @@ def _party_block(pdf: BASTPDF, label: str, name: str, id_no: str, position: str,
     pdf.ln(2)
 
 
+# def _signature_block(pdf: BASTPDF, left_label: str, left_name: str, left_id: str,
+#                      right_label: str, right_name: str, right_id: str):
+#     half = pdf.epw / 2
+
+#     def row(left_text: str, right_text: str, bold: bool = False):
+#         y = pdf.get_y()
+#         pdf.set_font("Helvetica", "B" if bold else "", 10)
+#         pdf.set_xy(pdf.l_margin, y)
+#         pdf.cell(half, 6, left_text, align="C")
+#         pdf.set_xy(pdf.l_margin + half, y)
+#         pdf.cell(half, 6, right_text, align="C")
+#         pdf.ln(6)
+
+#     row(left_label, right_label, bold=True)
+#     row("", "")
+#     row("", "")
+#     row("", "")
+#     left_nip = f"NIP. {left_id}" if (left_id and str(left_id).strip() != "-") else ""
+#     right_nip = f"NIP. {right_id}" if (right_id and str(right_id).strip() != "-") else ""
+#     row(left_name or "", right_name or "")
+#     row(left_nip, right_nip)
+
+#     pdf.ln(4)
+
+
+
 def _signature_block(pdf: BASTPDF, left_label: str, left_name: str, left_id: str,
                      right_label: str, right_name: str, right_id: str):
+    # 6 baris * tinggi 6 mm + spasi bawah 4 mm = 40 mm
+    block_height = 40
+    if pdf.get_y() + block_height > pdf.page_break_trigger:
+        pdf.add_page()
+
     half = pdf.epw / 2
 
     def row(left_text: str, right_text: str, bold: bool = False):
@@ -208,6 +240,84 @@ def _signature_block(pdf: BASTPDF, left_label: str, left_name: str, left_id: str
 #             for cell_val in row:
 #                 data_row.cell(str(cell_val if cell_val is not None else "-"))
 
+# def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
+#     pdf.set_font("Helvetica", "B", 12)
+#     pdf.cell(0, 8, "Lampiran", ln=1, align="C")
+#     pdf.cell(0, 6, "Berita Acara Serah Terima Barang", ln=1, align="C")
+#     pdf.set_font("Helvetica", "", 9)
+#     pdf.cell(0, 5, f"Tanggal : {_format_date_id(date_val)}", ln=1, align="C")
+#     pdf.ln(3)
+
+#     pdf.set_font("Helvetica", "B", 9)
+#     pdf.cell(0, 6, "Daftar Barang dalam Kegiatan ini", ln=1)
+#     pdf.ln(1)
+
+#     # Lebar kolom (total = 180 mm = epw A4 dgn margin 15)
+#     if with_condition:
+#         widths = (10, 34, 22, 24, 14, 42, 34)
+#         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number", "Kondisi"]
+#         aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT", "LEFT")
+#     else:
+#         widths = (10, 40, 26, 28, 18, 58)
+#         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number"]
+#         aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT")
+
+#     with pdf.table(col_widths=widths, text_align=aligns, line_height=5) as table:
+#         header_row = table.row()
+#         pdf.set_font("Helvetica", "B", 9)
+#         for h in headers:
+#             header_row.cell(h)
+
+#         pdf.set_font("Helvetica", "", 9)
+#         for row in rows:
+#             data_row = table.row()
+#             for cell_val in row:
+#                 data_row.cell(str(cell_val if cell_val is not None else "-"))
+
+# def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
+#     pdf.set_font("Helvetica", "B", 12)
+#     pdf.cell(0, 8, "Lampiran", ln=1, align="C")
+#     pdf.cell(0, 6, "Berita Acara Serah Terima Barang", ln=1, align="C")
+#     pdf.set_font("Helvetica", "", 9)
+#     pdf.cell(0, 5, f"Tanggal : {_format_date_id(date_val)}", ln=1, align="C")
+#     pdf.ln(3)
+
+#     pdf.set_font("Helvetica", "B", 9)
+#     pdf.cell(0, 6, "Daftar Barang dalam Kegiatan ini", ln=1)
+#     pdf.ln(1)
+
+#     # Lebar kolom (total = 180 mm = epw A4 dgn margin 15)
+#     if with_condition:
+#         widths = (10, 34, 22, 24, 14, 42, 34)
+#         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number", "Kondisi"]
+#         aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT", "LEFT")
+#     else:
+#         widths = (10, 40, 26, 28, 18, 58)
+#         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number"]
+#         aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT")
+
+#     with pdf.table(col_widths=widths, text_align=aligns, line_height=5) as table:
+#         header_row = table.row()
+#         pdf.set_font("Helvetica", "B", 9)
+#         for h in headers:
+#             header_row.cell(h)
+
+#         pdf.set_font("Helvetica", "", 9)
+#         for cells, is_first, is_last in rows:
+#             border = CellBordersLayout.LEFT | CellBordersLayout.RIGHT
+#             if is_first:
+#                 border |= CellBordersLayout.TOP
+#             if is_last:
+#                 border |= CellBordersLayout.BOTTOM
+
+#             data_row = table.row()
+#             for cell_val in cells:
+#                 data_row.cell(
+#                     str(cell_val if cell_val is not None else "-"),
+#                     border=border,
+#                 )
+
+
 def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 8, "Lampiran", ln=1, align="C")
@@ -220,27 +330,33 @@ def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
     pdf.cell(0, 6, "Daftar Barang dalam Kegiatan ini", ln=1)
     pdf.ln(1)
 
-    # Lebar kolom (total = 180 mm = epw A4 dgn margin 15)
+    # Total lebar = 180 mm (A4 lebar 210 mm - margin kiri/kanan 15 mm)
     if with_condition:
         widths = (10, 34, 22, 24, 14, 42, 34)
         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number", "Kondisi"]
-        aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT", "LEFT")
+        aligns = ("C", "L", "L", "L", "C", "L", "L")
     else:
         widths = (10, 40, 26, 28, 18, 58)
         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number"]
-        aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT")
+        aligns = ("C", "L", "L", "L", "C", "L")
 
-    with pdf.table(col_widths=widths, text_align=aligns, line_height=5) as table:
-        header_row = table.row()
-        pdf.set_font("Helvetica", "B", 9)
-        for h in headers:
-            header_row.cell(h)
+    # Header tabel
+    pdf.set_font("Helvetica", "B", 9)
+    x_start = pdf.get_x()
+    y_start = pdf.get_y()
+    header_h = 6
+    for i, h in enumerate(headers):
+        x = x_start + sum(widths[:i])
+        pdf.rect(x, y_start, widths[i], header_h)
+        pdf.set_xy(x, y_start)
+        pdf.cell(widths[i], header_h, h, align="C")
+    pdf.set_xy(x_start, y_start + header_h)
 
-        pdf.set_font("Helvetica", "", 9)
-        for row in rows:
-            data_row = table.row()
-            for cell_val in row:
-                data_row.cell(str(cell_val if cell_val is not None else "-"))
+    # Isi tabel per unit/barang (tanpa pecah per 15 baris)
+    pdf.set_font("Helvetica", "", 8.5)
+    for row in rows:
+        pdf.table_row(widths, row, line_h=4.5, align=aligns)
+
 
 def _render_document(pdf: BASTPDF, title: str, date_val,
                      party1: dict, party2: dict,
@@ -376,36 +492,169 @@ def _borrower_dict(borrower) -> dict:
 MAX_SN_PER_ROW = 15
 
 
-def _expand_multiline(items: list[str]) -> list[str]:
-    """Pecah elemen jika di dalamnya sudah terdapat newline."""
-    expanded = []
-    for item in items:
-        parts = [p.strip() for p in str(item).splitlines() if p.strip()]
-        expanded.extend(parts if parts else ["-"])
-    return expanded or ["-"]
+# def _expand_multiline(items: list[str]) -> list[str]:
+#     """Pecah elemen jika di dalamnya sudah terdapat newline."""
+#     expanded = []
+#     for item in items:
+#         parts = [p.strip() for p in str(item).splitlines() if p.strip()]
+#         expanded.extend(parts if parts else ["-"])
+#     return expanded or ["-"]
+
+
+# def _borrow_rows(tx) -> list:
+#     rows = []
+#     for idx, d in enumerate(tx.borrow_details or [], 1):
+#         comp = d.inventory_component
+#         sns = [bdi.inventory_item.serial_number or "-"
+#                for bdi in (d.borrow_detail_items or []) if bdi.inventory_item]
+#         if not sns:
+#             sns = [comp.serial_number or "-"] if comp else ["-"]
+#         sns = _expand_multiline(sns)
+
+#         for offset in range(0, len(sns), MAX_SN_PER_ROW):
+#             chunk_sns = sns[offset:offset + MAX_SN_PER_ROW]
+#             is_first = offset == 0
+#             rows.append((
+#                 str(idx) if is_first else "",
+#                 (comp.item_name if comp else "-") if is_first else "",
+#                 (comp.brand if comp else "-") if is_first else "",
+#                 (comp.model if comp else "-") if is_first else "",
+#                 str(d.quantity) if is_first else "",
+#                 "\n".join(chunk_sns),
+#             ))
+#     return rows
+
+
+# def _return_rows(ret) -> list:
+#     rows = []
+#     for idx, d in enumerate(ret.return_details or [], 1):
+#         comp = d.inventory_component
+#         sns = []
+#         conds = []
+#         for rdi in (d.return_detail_items or []):
+#             inv = rdi.inventory_item
+#             sns.append(inv.serial_number if inv and inv.serial_number else "-")
+#             conds.append(rdi.condition or "-")
+#         if not sns and comp:
+#             sns = [comp.serial_number or "-"]
+#             conds = ["-"]
+#         sns = _expand_multiline(sns)
+#         conds = _expand_multiline(conds)
+
+#         for offset in range(0, len(sns), MAX_SN_PER_ROW):
+#             chunk_sns = sns[offset:offset + MAX_SN_PER_ROW]
+#             chunk_conds = conds[offset:offset + MAX_SN_PER_ROW]
+#             is_first = offset == 0
+#             rows.append((
+#                 str(idx) if is_first else "",
+#                 (comp.item_name if comp else "-") if is_first else "",
+#                 (comp.brand if comp else "-") if is_first else "",
+#                 (comp.model if comp else "-") if is_first else "",
+#                 str(d.quantity) if is_first else "",
+#                 "\n".join(chunk_sns),
+#                 "\n".join(chunk_conds),
+#             ))
+#     return rows
+
+# def _expand_multiline(items: list[str]) -> list[str]:
+#     expanded = []
+#     for item in items:
+#         parts = [p.strip() for p in str(item).splitlines() if p.strip()]
+#         expanded.extend(parts if parts else ["-"])
+#     return expanded or ["-"]
+
+
+# def _borrow_rows(tx) -> list:
+#     rows = []
+#     for idx, d in enumerate(tx.borrow_details or [], 1):
+#         comp = d.inventory_component
+#         sns = [bdi.inventory_item.serial_number or "-"
+#                for bdi in (d.borrow_detail_items or []) if bdi.inventory_item]
+#         if not sns:
+#             sns = [comp.serial_number or "-"] if comp else ["-"]
+#         sns = _expand_multiline(sns)
+
+#         last_i = len(sns) - 1
+#         for i, sn in enumerate(sns):
+#             is_first = i == 0
+#             cells = (
+#                 str(idx) if is_first else "",
+#                 (comp.item_name if comp else "-") if is_first else "",
+#                 (comp.brand if comp else "-") if is_first else "",
+#                 (comp.model if comp else "-") if is_first else "",
+#                 str(d.quantity) if is_first else "",
+#                 sn,
+#             )
+#             rows.append((cells, is_first, i == last_i))
+#     return rows
+
+
+# def _return_rows(ret) -> list:
+#     rows = []
+#     for idx, d in enumerate(ret.return_details or [], 1):
+#         comp = d.inventory_component
+#         sns = []
+#         conds = []
+#         for rdi in (d.return_detail_items or []):
+#             inv = rdi.inventory_item
+#             sns.append(inv.serial_number if inv and inv.serial_number else "-")
+#             conds.append(rdi.condition or "-")
+#         if not sns and comp:
+#             sns = [comp.serial_number or "-"]
+#             conds = ["-"]
+#         sns = _expand_multiline(sns)
+#         conds = _expand_multiline(conds)
+
+#         last_i = len(sns) - 1
+#         for i, sn in enumerate(sns):
+#             is_first = i == 0
+#             cond = conds[i] if i < len(conds) else "-"
+#             cells = (
+#                 str(idx) if is_first else "",
+#                 (comp.item_name if comp else "-") if is_first else "",
+#                 (comp.brand if comp else "-") if is_first else "",
+#                 (comp.model if comp else "-") if is_first else "",
+#                 str(d.quantity) if is_first else "",
+#                 sn,
+#                 cond,
+#             )
+#             rows.append((cells, is_first, i == last_i))
+#     return rows
+
+
+def _normalize_sn_list(raw_sns: list[str]) -> list[str]:
+    cleaned = []
+    for sn in raw_sns:
+        if sn is None:
+            continue
+        for part in str(sn).splitlines():
+            p = part.strip()
+            if p:
+                cleaned.append(p)
+    return cleaned if cleaned else ["-"]
 
 
 def _borrow_rows(tx) -> list:
     rows = []
     for idx, d in enumerate(tx.borrow_details or [], 1):
         comp = d.inventory_component
-        sns = [bdi.inventory_item.serial_number or "-"
-               for bdi in (d.borrow_detail_items or []) if bdi.inventory_item]
-        if not sns:
-            sns = [comp.serial_number or "-"] if comp else ["-"]
-        sns = _expand_multiline(sns)
+        raw_sns = [
+            bdi.inventory_item.serial_number
+            for bdi in (d.borrow_detail_items or [])
+            if bdi.inventory_item
+        ]
+        if not raw_sns and comp:
+            raw_sns = [comp.serial_number]
+        sns = _normalize_sn_list(raw_sns)
 
-        for offset in range(0, len(sns), MAX_SN_PER_ROW):
-            chunk_sns = sns[offset:offset + MAX_SN_PER_ROW]
-            is_first = offset == 0
-            rows.append((
-                str(idx) if is_first else "",
-                (comp.item_name if comp else "-") if is_first else "",
-                (comp.brand if comp else "-") if is_first else "",
-                (comp.model if comp else "-") if is_first else "",
-                str(d.quantity) if is_first else "",
-                "\n".join(chunk_sns),
-            ))
+        rows.append((
+            str(idx),
+            comp.item_name if comp else "-",
+            comp.brand if comp else "-",
+            comp.model if comp else "-",
+            str(d.quantity),
+            "\n".join(sns),
+        ))
     return rows
 
 
@@ -413,32 +662,29 @@ def _return_rows(ret) -> list:
     rows = []
     for idx, d in enumerate(ret.return_details or [], 1):
         comp = d.inventory_component
-        sns = []
-        conds = []
+        raw_sns = []
+        raw_conds = []
         for rdi in (d.return_detail_items or []):
             inv = rdi.inventory_item
-            sns.append(inv.serial_number if inv and inv.serial_number else "-")
-            conds.append(rdi.condition or "-")
-        if not sns and comp:
-            sns = [comp.serial_number or "-"]
-            conds = ["-"]
-        sns = _expand_multiline(sns)
-        conds = _expand_multiline(conds)
+            raw_sns.append(inv.serial_number if inv else "-")
+            raw_conds.append(rdi.condition or "-")
+        if not raw_sns and comp:
+            raw_sns = [comp.serial_number]
+            raw_conds = ["-"]
+        sns = _normalize_sn_list(raw_sns)
+        conds = _normalize_sn_list(raw_conds)
 
-        for offset in range(0, len(sns), MAX_SN_PER_ROW):
-            chunk_sns = sns[offset:offset + MAX_SN_PER_ROW]
-            chunk_conds = conds[offset:offset + MAX_SN_PER_ROW]
-            is_first = offset == 0
-            rows.append((
-                str(idx) if is_first else "",
-                (comp.item_name if comp else "-") if is_first else "",
-                (comp.brand if comp else "-") if is_first else "",
-                (comp.model if comp else "-") if is_first else "",
-                str(d.quantity) if is_first else "",
-                "\n".join(chunk_sns),
-                "\n".join(chunk_conds),
-            ))
+        rows.append((
+            str(idx),
+            comp.item_name if comp else "-",
+            comp.brand if comp else "-",
+            comp.model if comp else "-",
+            str(d.quantity),
+            "\n".join(sns),
+            "\n".join(conds),
+        ))
     return rows
+
 
 def generate_borrow_document(tx) -> bytes:
     """Generate PDF BAST untuk peminjaman.
@@ -554,6 +800,85 @@ TITLE_HANDOVER = "BERITA ACARA SERAH TERIMA BARANG (PELIMPAHAN)"
 #     return rows
 
 
+# def _handover_rows(h) -> list:
+#     rows = []
+#     items_by_comp = {}
+#     for hi in (h.items or []):
+#         if hasattr(hi, "inventory_item") and hi.inventory_item:
+#             item = hi.inventory_item
+#             comp = item.component if hasattr(item, "component") else None
+#             comp_name = comp.item_name if comp else "-"
+#             brand = comp.brand if comp else "-"
+#             model = comp.model if comp else "-"
+#             sn = item.serial_number or "-"
+#         else:
+#             comp_name = getattr(hi, "component_name", "-") or "-"
+#             brand = "-"
+#             model = "-"
+#             sn = getattr(hi, "serial_number", "-") or "-"
+
+#         key = (comp_name, brand, model)
+#         if key not in items_by_comp:
+#             items_by_comp[key] = []
+#         items_by_comp[key].append(sn)
+
+#     for idx, ((comp_name, brand, model), sns) in enumerate(items_by_comp.items(), 1):
+#         expanded_sns = _expand_multiline(sns)
+#         total_qty = str(len(expanded_sns))
+#         for offset in range(0, len(expanded_sns), MAX_SN_PER_ROW):
+#             chunk_sns = expanded_sns[offset:offset + MAX_SN_PER_ROW]
+#             is_first = offset == 0
+#             rows.append((
+#                 str(idx) if is_first else "",
+#                 comp_name if is_first else "",
+#                 brand if is_first else "",
+#                 model if is_first else "",
+#                 total_qty if is_first else "",
+#                 "\n".join(chunk_sns),
+#             ))
+#     return rows
+
+
+
+# def _handover_rows(h) -> list:
+#     rows = []
+#     items_by_comp = {}
+#     for hi in (h.items or []):
+#         if hasattr(hi, "inventory_item") and hi.inventory_item:
+#             item = hi.inventory_item
+#             comp = item.component if hasattr(item, "component") else None
+#             comp_name = comp.item_name if comp else "-"
+#             brand = comp.brand if comp else "-"
+#             model = comp.model if comp else "-"
+#             sn = item.serial_number or "-"
+#         else:
+#             comp_name = getattr(hi, "component_name", "-") or "-"
+#             brand = "-"
+#             model = "-"
+#             sn = getattr(hi, "serial_number", "-") or "-"
+
+#         key = (comp_name, brand, model)
+#         if key not in items_by_comp:
+#             items_by_comp[key] = []
+#         items_by_comp[key].append(sn)
+
+#     for idx, ((comp_name, brand, model), sns) in enumerate(items_by_comp.items(), 1):
+#         expanded_sns = _expand_multiline(sns)
+#         total_qty = str(len(expanded_sns))
+#         last_i = len(expanded_sns) - 1
+#         for i, sn in enumerate(expanded_sns):
+#             is_first = i == 0
+#             cells = (
+#                 str(idx) if is_first else "",
+#                 comp_name if is_first else "",
+#                 brand if is_first else "",
+#                 model if is_first else "",
+#                 total_qty if is_first else "",
+#                 sn,
+#             )
+#             rows.append((cells, is_first, i == last_i))
+#     return rows
+
 def _handover_rows(h) -> list:
     rows = []
     items_by_comp = {}
@@ -572,25 +897,20 @@ def _handover_rows(h) -> list:
             sn = getattr(hi, "serial_number", "-") or "-"
 
         key = (comp_name, brand, model)
-        if key not in items_by_comp:
-            items_by_comp[key] = []
-        items_by_comp[key].append(sn)
+        items_by_comp.setdefault(key, []).append(sn)
 
-    for idx, ((comp_name, brand, model), sns) in enumerate(items_by_comp.items(), 1):
-        expanded_sns = _expand_multiline(sns)
-        total_qty = str(len(expanded_sns))
-        for offset in range(0, len(expanded_sns), MAX_SN_PER_ROW):
-            chunk_sns = expanded_sns[offset:offset + MAX_SN_PER_ROW]
-            is_first = offset == 0
-            rows.append((
-                str(idx) if is_first else "",
-                comp_name if is_first else "",
-                brand if is_first else "",
-                model if is_first else "",
-                total_qty if is_first else "",
-                "\n".join(chunk_sns),
-            ))
+    for idx, ((comp_name, brand, model), raw_sns) in enumerate(items_by_comp.items(), 1):
+        sns = _normalize_sn_list(raw_sns)
+        rows.append((
+            str(idx),
+            comp_name,
+            brand,
+            model,
+            str(len(sns)),
+            "\n".join(sns),
+        ))
     return rows
+
 
 def generate_handover_document(h) -> bytes:
     """Generate PDF BAST untuk pelimpahan barang ke UPT.
