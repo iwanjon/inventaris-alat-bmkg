@@ -122,12 +122,41 @@ def _party_block(pdf: BASTPDF, label: str, name: str, id_no: str, position: str,
     pdf.ln(2)
 
 
+# def _signature_block(pdf: BASTPDF, left_label: str, left_name: str, left_id: str,
+#                      right_label: str, right_name: str, right_id: str):
+#     """Gambar blok tanda tangan secara utuh (tidak terpotong antar halaman)."""
+#     required_height = 44
+#     max_y = pdf.h - pdf.b_margin
+#     if pdf.get_y() + required_height > max_y:
+#         pdf.add_page()
+
+#     half = pdf.epw / 2
+
+#     def row(left_text: str, right_text: str, bold: bool = False):
+#         y = pdf.get_y()
+#         pdf.set_font("Helvetica", "B" if bold else "", 10)
+#         pdf.set_xy(pdf.l_margin, y)
+#         pdf.cell(half, 6, left_text, align="C")
+#         pdf.set_xy(pdf.l_margin + half, y)
+#         pdf.cell(half, 6, right_text, align="C")
+#         pdf.ln(6)
+
+#     row(left_label, right_label, bold=True)
+#     row("", "")
+#     row("", "")
+#     row("", "")
+#     left_nip = f"NIP. {left_id}" if (left_id and str(left_id).strip() != "-") else ""
+#     right_nip = f"NIP. {right_id}" if (right_id and str(right_id).strip() != "-") else ""
+#     row(left_name or "", right_name or "")
+#     row(left_nip, right_nip)
+
+#     pdf.ln(4)
+
 def _signature_block(pdf: BASTPDF, left_label: str, left_name: str, left_id: str,
                      right_label: str, right_name: str, right_id: str):
-    """Gambar blok tanda tangan secara utuh (tidak terpotong antar halaman)."""
-    required_height = 44
-    max_y = pdf.h - pdf.b_margin
-    if pdf.get_y() + required_height > max_y:
+    """Gambar blok tanda tangan secara utuh tanpa terpotong antar halaman."""
+    required_height = 46
+    if pdf.get_y() + required_height > pdf.page_break_trigger:
         pdf.add_page()
 
     half = pdf.epw / 2
@@ -153,6 +182,51 @@ def _signature_block(pdf: BASTPDF, left_label: str, left_name: str, left_id: str
     pdf.ln(4)
 
 
+
+# def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
+#     pdf.set_font("Helvetica", "B", 12)
+#     pdf.cell(0, 8, "Lampiran", ln=1, align="C")
+#     pdf.cell(0, 6, "Berita Acara Serah Terima Barang", ln=1, align="C")
+#     pdf.set_font("Helvetica", "", 9)
+#     pdf.cell(0, 5, f"Tanggal : {_format_date_id(date_val)}", ln=1, align="C")
+#     pdf.ln(3)
+
+#     pdf.set_font("Helvetica", "B", 9)
+#     pdf.cell(0, 6, "Daftar Barang dalam Kegiatan ini", ln=1)
+#     pdf.ln(1)
+
+#     # Lebar kolom (total = 180 mm = epw A4 dgn margin 15)
+#     if with_condition:
+#         widths = (10, 34, 22, 24, 14, 42, 34)
+#         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number", "Kondisi"]
+#         aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT", "LEFT")
+#     else:
+#         widths = (10, 40, 26, 28, 18, 58)
+#         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number"]
+#         aligns = ("CENTER", "LEFT", "LEFT", "LEFT", "CENTER", "LEFT")
+
+#     with pdf.table(col_widths=widths, text_align=aligns, line_height=4.5) as table:
+#         header_row = table.row()
+#         pdf.set_font("Helvetica", "B", 8.5)
+#         for h in headers:
+#             header_row.cell(h)
+
+#         pdf.set_font("Helvetica", "", 8.5)
+#         for cells, is_first, is_last in rows:
+#             border = CellBordersLayout.LEFT | CellBordersLayout.RIGHT
+#             if is_first:
+#                 border |= CellBordersLayout.TOP
+#             if is_last:
+#                 border |= CellBordersLayout.BOTTOM
+
+#             data_row = table.row()
+#             for cell_val in cells:
+#                 data_row.cell(
+#                     str(cell_val if cell_val is not None else "-"),
+#                     border=border,
+#                 )
+
+
 def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 8, "Lampiran", ln=1, align="C")
@@ -165,7 +239,6 @@ def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
     pdf.cell(0, 6, "Daftar Barang dalam Kegiatan ini", ln=1)
     pdf.ln(1)
 
-    # Lebar kolom (total = 180 mm = epw A4 dgn margin 15)
     if with_condition:
         widths = (10, 34, 22, 24, 14, 42, 34)
         headers = ["No", "Nama Barang", "Merk", "Type", "Jumlah", "Serial Number", "Kondisi"]
@@ -195,6 +268,73 @@ def _draw_attachment(pdf: BASTPDF, rows, with_condition: bool, date_val):
                     str(cell_val if cell_val is not None else "-"),
                     border=border,
                 )
+
+
+# def _render_document(pdf: BASTPDF, title: str, date_val,
+#                      party1: dict, party2: dict,
+#                      description: str, purpose: str,
+#                      article1_text: str, article2_text: str,
+#                      rows, with_condition: bool,
+#                      sign_left_label: str, sign_left_name: str, sign_left_id: str,
+#                      sign_right_label: str, sign_right_name: str, sign_right_id: str):
+#     pdf.add_page()
+
+#     # Judul & tanggal
+#     pdf.set_font("Helvetica", "B", 13)
+#     pdf.cell(0, 9, title, ln=1, align="C")
+#     pdf.set_font("Helvetica", "", 10)
+#     pdf.cell(0, 6, f"Pada Tanggal {_format_date_id(date_val)}, kami yang bertanda tangan di bawah ini:", ln=1, align="L")
+#     pdf.ln(3)
+
+#     # Pihak
+#     _party_block(pdf, "1. PIHAK PERTAMA", party1["name"], party1["id_no"],
+#                  party1["position"], party1["institution"])
+#     _party_block(pdf, "2. PIHAK KEDUA", party2["name"], party2["id_no"],
+#                  party2["position"], party2["institution"])
+
+#     # Pasal
+#     pdf.set_font("Helvetica", "B", 10)
+#     pdf.cell(0, 6, "Pasal 1", ln=1)
+#     pdf.set_font("Helvetica", "", 10)
+#     pdf.multi_cell(0, 6, article1_text, align="J")
+#     pdf.ln(2)
+
+#     pdf.set_font("Helvetica", "B", 10)
+#     pdf.cell(0, 6, "Pasal 2", ln=1)
+#     pdf.set_font("Helvetica", "", 10)
+#     pdf.multi_cell(0, 6, article2_text, align="J")
+#     pdf.ln(2)
+
+#     pdf.set_font("Helvetica", "B", 10)
+#     pdf.cell(0, 6, "Pasal 3", ln=1)
+#     pdf.set_font("Helvetica", "", 10)
+#     pdf.multi_cell(0, 6,
+#                    "Lampiran Berita Acara Serah Terima yang ditandatangani oleh PIHAK PERTAMA dan "
+#                    "PIHAK KEDUA, merupakan bagian yang tidak terpisahkan dalam Berita Acara ini.",
+#                    align="J")
+
+#     # Halaman 2 — penutup + tanda tangan
+#     pdf.add_page()
+#     pdf.set_font("Helvetica", "", 10)
+#     pdf.multi_cell(0, 6,
+#                    "Demikian Serah Terima Barang ini kami selenggarakan dengan seksama dan dalam keadaan "
+#                    "sebenarnya pada hari dan tanggal tersebut di atas untuk dipergunakan sebagaimana perlunya. "
+#                    "Berita Acara Serah Terima ini akan ditinjau kembali apabila dikemudian hari ternyata "
+#                    "terdapat kekeliruan.",
+#                    align="J")
+#     pdf.ln(10)
+#     _signature_block(pdf, sign_left_label, sign_left_name, sign_left_id,
+#                      sign_right_label, sign_right_name, sign_right_id)
+
+#     # Halaman 3 — lampiran
+#     pdf.add_page()
+#     _draw_attachment(pdf, rows, with_condition, date_val)
+
+#     pdf.ln(10)
+#     _signature_block(pdf, sign_left_label, sign_left_name, sign_left_id,
+#                      sign_right_label, sign_right_name, sign_right_id)
+
+#     return bytes(pdf.output())
 
 
 def _render_document(pdf: BASTPDF, title: str, date_val,
@@ -240,28 +380,29 @@ def _render_document(pdf: BASTPDF, title: str, date_val,
                    "PIHAK KEDUA, merupakan bagian yang tidak terpisahkan dalam Berita Acara ini.",
                    align="J")
 
-    # Halaman 2 — penutup + tanda tangan
-    pdf.add_page()
+    # Penutup + tanda tangan (mencoba muat di halaman 1 tanpa paksa add_page)
+    pdf.ln(3)
     pdf.set_font("Helvetica", "", 10)
-    pdf.multi_cell(0, 6,
+    pdf.multi_cell(0, 5.5,
                    "Demikian Serah Terima Barang ini kami selenggarakan dengan seksama dan dalam keadaan "
                    "sebenarnya pada hari dan tanggal tersebut di atas untuk dipergunakan sebagaimana perlunya. "
                    "Berita Acara Serah Terima ini akan ditinjau kembali apabila dikemudian hari ternyata "
                    "terdapat kekeliruan.",
                    align="J")
-    pdf.ln(10)
+    pdf.ln(4)
     _signature_block(pdf, sign_left_label, sign_left_name, sign_left_id,
                      sign_right_label, sign_right_name, sign_right_id)
 
-    # Halaman 3 — lampiran
+    # Lampiran
     pdf.add_page()
     _draw_attachment(pdf, rows, with_condition, date_val)
 
-    pdf.ln(10)
+    pdf.ln(6)
     _signature_block(pdf, sign_left_label, sign_left_name, sign_left_id,
                      sign_right_label, sign_right_name, sign_right_id)
 
     return bytes(pdf.output())
+
 
 
 def _officer_dict(officer) -> dict:
